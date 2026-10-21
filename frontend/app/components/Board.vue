@@ -1,7 +1,26 @@
 <script setup lang="ts">
-import { computed, reactive } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useDrag } from '~/composables/useDrag'
-import { GRID } from '~/utils/grid'
+import { GRID, snap } from '~/utils/grid'
+import { NOTE_COLORS, NOTE_SIZE, type Note } from '~/utils/notes'
+
+// The board owns all notes. PostIt only displays one and reports changes back.
+const notes = ref<Note[]>([])
+const selectedId = ref<number | null>(null)
+let nextId = 1
+
+function addNote(x: number, y: number, text = '') {
+  const note: Note = { id: nextId++, x: snap(x), y: snap(y), width: NOTE_SIZE, height: NOTE_SIZE, color: NOTE_COLORS[0]!.value, text }
+  notes.value.push(note)
+  return note
+}
+
+function updateNote(id: number, patch: Partial<Note>) {
+  const note = notes.value.find(n => n.id === id)
+  if (note) Object.assign(note, patch)
+}
+
+addNote(GRID * 5, GRID * 5, 'Neue Notiz')
 
 // How far the canvas has been panned, in screen pixels.
 const offset = reactive({ x: 0, y: 0 })
@@ -14,6 +33,9 @@ const onPanStart = useDrag({
   move(dx, dy) {
     offset.x = panStart.x + dx
     offset.y = panStart.y + dy
+  },
+  end(_dx, _dy, tap) {
+    if (tap) selectedId.value = null
   },
 })
 
@@ -33,7 +55,15 @@ const gridStyle = computed(() => ({
     @pointerdown="onPanStart"
   >
     <div class="absolute top-0 left-0" :style="{ transform: `translate(${offset.x}px, ${offset.y}px)` }">
-      <PostIt />
+      <PostIt
+        v-for="note in notes"
+        :key="note.id"
+        :note="note"
+        :selected="note.id === selectedId"
+        :zoom="1"
+        @update="updateNote(note.id, $event)"
+        @select="selectedId = note.id"
+      />
     </div>
   </div>
 </template>
