@@ -4,7 +4,6 @@ const MAX_SCALE = 4
 
 const offset = reactive({ x: 0, y: 0 })
 const scale = ref(1)
-provide('canvasScale', scale)
 let dragging = false
 
 function zoomAt(pointX: number, pointY: number, factor: number) {
@@ -39,6 +38,16 @@ function onPointerMove(event: PointerEvent) {
 function onPointerUp() {
   dragging = false
 }
+
+// The board point at the middle of the screen, so new objects appear where the user is looking.
+function center() {
+  return {
+    x: (window.innerWidth / 2 - offset.x) / scale.value,
+    y: (window.innerHeight / 2 - offset.y) / scale.value,
+  }
+}
+
+defineExpose({ center, scale, offset: readonly(offset) })
 </script>
 
 <template>
