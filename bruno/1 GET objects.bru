@@ -1,0 +1,18 @@
+meta {
+  name: GET objects
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/objects
+  body: none
+  auth: none
+}
+
+tests {
+  test("200 + list", function () {
+    expect(res.getStatus()).to.equal(200)
+    expect(res.getBody()).to.be.an('array')
+  })
+}

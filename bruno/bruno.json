@@ -1,0 +1,10 @@
+{
+  "version": "1",
+  "name": "Board API",
+  "type": "collection",
+  "scripts": {
+    "filesystemAccess": {
+      "allow": true
+    }
+  }
+}

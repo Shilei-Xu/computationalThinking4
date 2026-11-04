@@ -1,0 +1,17 @@
+meta {
+  name: DELETE object
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/objects/{{objectId}}
+  body: none
+  auth: none
+}
+
+tests {
+  test("204", function () {
+    expect(res.getStatus()).to.equal(204)
+  })
+}

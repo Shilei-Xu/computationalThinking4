@@ -1,0 +1,29 @@
+meta {
+  name: POST object again
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/objects
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "id": "{{objectId}}",
+    "type": "circle",
+    "x": 0,
+    "y": 0,
+    "width": 144,
+    "height": 144,
+    "color": "blue"
+  }
+}
+
+tests {
+  test("409 for an existing id", function () {
+    expect(res.getStatus()).to.equal(409)
+  })
+}

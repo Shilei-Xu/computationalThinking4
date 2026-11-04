@@ -1,0 +1,36 @@
+meta {
+  name: POST object
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/objects
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "id": "{{objectId}}",
+    "type": "circle",
+    "x": 20,
+    "y": 0,
+    "width": 144,
+    "height": 144,
+    "color": "blue"
+  }
+}
+
+tests {
+  test("201", function () {
+    expect(res.getStatus()).to.equal(201)
+  })
+  
+  test("object is in board.json", function () {
+    const fs = require('fs')
+    const path = require('path')
+    const board = JSON.parse(fs.readFileSync(path.join(bru.cwd(), '../backend/data/board.json'), 'utf8'))
+    expect(board.some(object => object.id === res.getBody().id)).to.equal(true)
+  })
+}
