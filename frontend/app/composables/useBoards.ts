@@ -1,13 +1,14 @@
-import type { Board } from '~/types/board'
+import type { Board, BoardWithMembers, Member } from '~/types/board'
 
 // The list of boards for the overview. Every change goes through one of the functions below,
 // just like useBoard does for the objects on one board.
 export function useBoards() {
-  const api = $fetch.create({ baseURL: useRuntimeConfig().public.apiBase })
-  const boards = useState<Board[]>('boards', () => [])
+  // credentials: sends the login cookies, so the backend knows whose boards to list.
+  const api = $fetch.create({ baseURL: useRuntimeConfig().public.apiBase, credentials: 'include' })
+  const boards = useState<BoardWithMembers[]>('boards', () => [])
 
   async function load() {
-    boards.value = await api<Board[]>('/boards')
+    boards.value = await api<BoardWithMembers[]>('/boards')
   }
 
   // Returns undefined if the board does not exist.
@@ -23,7 +24,7 @@ export function useBoards() {
 
   // Waits for the backend, because the new board is opened right away and has to exist there.
   async function addBoard(name: string) {
-    const board = await api<Board>('/boards', { method: 'POST', body: { id: crypto.randomUUID(), name } })
+    const board = await api<BoardWithMembers>('/boards', { method: 'POST', body: { id: crypto.randomUUID(), name } })
     boards.value = [board, ...boards.value]
     return board.id
   }
@@ -38,5 +39,15 @@ export function useBoards() {
     api(`/boards/${id}`, { method: 'DELETE' })
   }
 
-  return { boards: readonly(boards), load, getBoard, addBoard, renameBoard, removeBoard }
+  // Waits for the backend, because only it knows who has this email. Errors go to the caller.
+  async function addMember(boardId: string, email: string) {
+    const member = await api<Member>(`/boards/${boardId}/members`, { method: 'POST', body: { email } })
+    boards.value = boards.value.map(board =>
+      board.id === boardId && !board.members.some(m => m.id === member.id)
+        ? { ...board, members: [...board.members, member] }
+        : board)
+    return member
+  }
+
+  return { boards: readonly(boards), load, getBoard, addBoard, renameBoard, removeBoard, addMember }
 }

@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import type { Board } from '~/types/board'
-import { Pencil as PencilIcon, Plus as PlusIcon, Trash2 as TrashIcon } from '@lucide/vue'
+import { LogOut as LogOutIcon, Pencil as PencilIcon, Plus as PlusIcon, Trash2 as TrashIcon, UserPlus as UserPlusIcon } from '@lucide/vue'
 
-// Overview of all boards: open, create, rename and delete them.
-const { boards, load, addBoard, renameBoard, removeBoard } = useBoards()
-await load()
+// Overview of my boards: open, create, rename and delete them, and add members.
+const { boards, load, addBoard, renameBoard, removeBoard, addMember } = useBoards()
+const { user, load: loadUser, login, logout } = useAuth()
+// Only someone who is logged in has boards; without a login the backend refuses the list.
+await loadUser()
+if (user.value) await load()
 
 async function onAdd() {
   const name = window.prompt('Wie soll das Board heißen?', 'Neues Board')
@@ -20,10 +23,37 @@ function onRename(board: Board) {
 function onRemove(board: Board) {
   if (window.confirm(`„${board.name}“ und alles darauf löschen?`)) removeBoard(board.id)
 }
+
+// Only people who have logged in before can be found by their email.
+async function onAddMember(board: Board) {
+  const email = window.prompt(`Wen möchtest du zu „${board.name}“ hinzufügen? (E-Mail-Adresse)`)
+  if (!email) return
+  try {
+    await addMember(board.id, email)
+  }
+  catch (error) {
+    const forbidden = (error as { statusCode?: number }).statusCode === 403
+    window.alert(forbidden ? 'Nur Mitglieder können andere hinzufügen.' : 'Niemand mit dieser E-Mail hat sich schon angemeldet.')
+  }
+}
 </script>
 
 <template>
-  <main class="mx-auto max-w-5xl p-8">
+  <main v-if="!user" class="flex min-h-screen items-center justify-center">
+    <Button variant="outline" @click="login">
+      Mit Google anmelden
+    </Button>
+  </main>
+
+  <main v-else class="mx-auto max-w-5xl p-8">
+    <div class="mb-8 flex items-center justify-end gap-3">
+      <img v-if="user.avatarUrl" :src="user.avatarUrl" alt="" referrerpolicy="no-referrer" class="size-8 rounded-full">
+      <span class="text-sm font-medium">{{ user.name }}</span>
+      <Button variant="ghost" size="icon-sm" aria-label="Log out" @click="logout">
+        <LogOutIcon />
+      </Button>
+    </div>
+
     <div class="mb-8 flex items-center justify-between">
       <h1 class="text-2xl font-semibold">
         Boards
@@ -44,11 +74,20 @@ function onRemove(board: Board) {
         :key="board.id"
         class="group relative rounded-xl border bg-white shadow-sm transition-shadow hover:shadow-md"
       >
-        <NuxtLink :to="`/boards/${board.id}`" class="flex items-baseline gap-4 py-4 pl-5 pr-24">
+        <NuxtLink :to="`/boards/${board.id}`" class="flex items-center gap-4 py-4 pl-5 pr-32">
           <span class="truncate font-medium">{{ board.name }}</span>
+          <span class="flex shrink-0 -space-x-2">
+            <template v-for="member in board.members" :key="member.id">
+              <img v-if="member.avatarUrl" :src="member.avatarUrl" :alt="member.name" :title="member.name" referrerpolicy="no-referrer" class="size-6 rounded-full ring-2 ring-white">
+              <span v-else :title="member.name" class="flex size-6 items-center justify-center rounded-full bg-muted text-xs font-medium ring-2 ring-white">{{ member.name[0] }}</span>
+            </template>
+          </span>
           <span class="shrink-0 text-sm text-muted-foreground">{{ new Date(board.createdAt).toLocaleDateString('de-DE') }}</span>
         </NuxtLink>
         <div class="absolute right-3 top-1/2 flex -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+          <Button variant="ghost" size="icon-sm" aria-label="Add member" @click="onAddMember(board)">
+            <UserPlusIcon />
+          </Button>
           <Button variant="ghost" size="icon-sm" aria-label="Rename board" @click="onRename(board)">
             <PencilIcon />
           </Button>

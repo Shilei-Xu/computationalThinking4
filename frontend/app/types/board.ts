@@ -4,3 +4,15 @@ export interface Board {
   name: string
   createdAt: string
 }
+
+// Someone who has logged in and belongs to a board.
+export interface Member {
+  id: string
+  name: string
+  avatarUrl?: string
+}
+
+// In the overview, every board comes with its members.
+export interface BoardWithMembers extends Board {
+  members: Member[]
+}

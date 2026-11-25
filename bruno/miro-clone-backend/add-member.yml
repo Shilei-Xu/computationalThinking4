@@ -1,0 +1,17 @@
+info:
+  name: Add member
+  type: http
+  seq: 9
+
+http:
+  method: POST
+  url: http://localhost:3001/boards/board-from-bruno/members
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "email": "someone@example.com"
+      }
